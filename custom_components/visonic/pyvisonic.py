@@ -974,6 +974,7 @@ class ProtocolBase(asyncio.Protocol):
 
         self.expectedResponseTimeout = 0
 
+        self.firstCmdSent = False
         ###################################################################
         # Variables that are used and modified throughout derived classes
         ###################################################################
@@ -1277,9 +1278,12 @@ class ProtocolBase(asyncio.Protocol):
             return
         #log.debug('[data receiver] received data: %s', self.toString(data))
         for databyte in data:
-            #log.debug("[data receiver] Processing " + hex(databyte).upper())
-            # process a single byte at a time
-            self.handle_received_byte(databyte)
+            if( self.firstCmdSent == False ):
+                log.debug("[data receiver] Ignoring garbage data " + hex(databyte).upper())
+            else:			
+                #log.debug("[data receiver] Processing " + hex(databyte).upper())
+                # process a single byte at a time
+                self.handle_received_byte(databyte)
 
     # Process one received byte at a time to build up the received messages
     #       pmIncomingPduLen is only used in this function
@@ -1517,7 +1521,7 @@ class ProtocolBase(asyncio.Protocol):
             
             # no need to send i'm alive message for a while as we're about to send a command anyway
             self.reset_keep_alive_messages()   
-
+            self.firstCmdSent = True
             # Log some useful information in debug mode
             self.transport.write(sData)
             #log.debug("[pmSendPdu]      waiting for message response {}".format([hex(no).upper() for no in self.pmExpectedResponse]))
